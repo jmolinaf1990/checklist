@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Auditoría de Procesos PC2</title>
+    <style>
+        :root {
+            --primary-color: #0284c7;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 80px;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            font-size: 1.2rem;
+            margin: 0 0 8px 0;
+        }
+        .meta-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        .meta-info input {
+            width: 100%;
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+        .section-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary-color);
+        }
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+        .item-card {
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .item-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .radio-group label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            resize: vertical;
+            box-sizing: border-box;
+            min-height: 50px;
+        }
+        .summary-box {
+            background-color: #0f172a;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        .btn-export {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-export:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>CHECKLIST AUDITORÍA PC2</h1>
+        <div class="meta-info">
+            <div>
+                <label>Fecha:</label>
+                <input type="text" id="fecha" value="09/10/2026">
+            </div>
+            <div>
+                <label>Turno:</label>
+                <input type="text" id="turno" value="Día">
+            </div>
+            <div style="grid-column: span 2;">
+                <label>Auditor:</label>
+                <input type="text" id="auditor" value="Joel Molina Farra">
+            </div>
+        </div>
+    </header>
+
+    <div id="checklist-container"></div>
+
+    <div class="summary-box">
+        <h3>Resumen General</h3>
+        <p id="stats-text">Calculando...</p>
+    </div>
+
+    <button class="btn-export" onclick="exportarResumen()">Copiar Reporte para Enviar</button>
+
+    <script>
+        const estructuraChecklist = [
+            {
+                seccion: "1. RECEPCIÓN",
+                items: [
+                    { texto: "Consumo de hielo y registro control de consumo por área.", estado: "C", obs: "Se verifica los movimientos y el consumo diario del hielo mediante información registrada en el KARDEX del artículo C-00001930 HIELO PROPIO con un saldo de 200 k por consumir a la fecha 09/10/2026. Importante mencionar que durante la jornada la recepción se quedó desabastecida del insumo." },
+                    { texto: "Se encuentra ordenado, íntegro y limpia el área (bines, gavetas, utensilios y materiales).", estado: "C", obs: "El área se encontró limpia, sin embargo hay que mejorar la limpieza de los bines de hielo." },
+                    { texto: "Verificación de la Materia Prima en el área de recepción y cumplimiento de no exceder 48 horas desde el ingreso a planta.", estado: "NC", obs: "Se verifica un lote con fecha de ingreso 06/10 excediendo el tiempo límite para su permanencia en recepción, excediendo las 48 hs en recepción (sin meta)." },
+                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS).", estado: "C", obs: "Verificación la temperatura del producto recibido en el proceso de clasificación (temperatura de 3.1 °C)." }
+                ]
+            },
+            {
+                seccion: "2. DESCABEZADO",
+                items: [
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos en el área.", estado: "C", obs: "Sin novedad durante la verificación." },
+                    { texto: "Verificación de limpieza de los equipos y liberación de máquinas por luminometría/visual.", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS - TOLVAS - MESAS).", estado: "C", obs: "Temperaturas dentro de parámetros durante la revisión." },
+                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la revisión no se evidenció paras no programadas en la operación." }
+                ]
+            },
+            {
+                seccion: "3. MÁQUINAS CLASIFICADORAS",
+                items: [
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad en el área durante la visita." },
+                    { texto: "Verificación de limpieza de los equipos y liberación mediante luminometría.", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Verificación de temperaturas en el proceso (tolvas y camarón en parámetro).", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Se evidencia fluidez y correcta distribución del personal operativo (18 personas).", estado: "C", obs: "Distribución: MOD DE 14 EN MAQ DE CLASIF 5 / MOD DE 17 EN MAQ DE CLASIF 6." },
+                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la visita no se evidenció paras no programadas." }
+                ]
+            },
+            {
+                seccion: "4. VALOR AGREGADO SALA #2, 3, 4",
+                items: [
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad durante la visita." },
+                    { texto: "Verificación de temperaturas óptimas del producto.", estado: "C", obs: "No se registraron novedades en producto. Se evidenció la temperatura ambiente no conforme 22.6°C." },
+                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Durante la visita se evidenció acumulación de personal en la sala 4A causado por el avance rápido del personal en talla grande." },
+                    { texto: "Verificación de rendimientos en los procesos.", estado: "C", obs: "Rendimientos dentro de parámetros conforme al corte en la sala #4B." }
+                ]
+            },
+            {
+                seccion: "5. IQF PALINOX 1 - 2 - 3",
+                items: [
+                    { texto: "Temperaturas óptimas de entrada y salida del producto en túneles de congelación.", estado: "NC", obs: "El equipo PALINOX 2 tuvo elevación de temperatura en el transcurso de la mañana." },
+                    { texto: "BPM del área del proceso, integridad de maquinarias y herramientas de trabajo.", estado: "NC", obs: "En el transcurso de la tarde la máquina de sellado ubicada en el IQF2 presentó fallas." },
+                    { texto: "Correcta utilización del detector de metales en el área.", estado: "C", obs: "Uso correcto del detector de metales." },
+                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Se registró una parada no programada de 7 horas en el equipo PALINOX 3 debido a un desprendimiento interno (fisura/rotura de soldadura) en su estructura metálica interna. La atención requirió la intervención de un proveedor externo." }
+                ]
+            },
+            {
+                seccion: "6. CALIDAD",
+                items: [
+                    { texto: "Tiempos acordes al proceso en resultados de los residuales.", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Verificación de equipos de medición calibrados y operativas.", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Se observa el cumplimiento en el registro de concesiones.", estado: "C", obs: "Se verifica el cumplimiento del registro de concesiones con fecha 08/10." }
+                ]
+            },
+            {
+                seccion: "7. TÚNELES DE CONGELACIÓN - CÁMARA",
+                items: [
+                    { texto: "Registro y estado de túneles de congelación en buen estado.", estado: "C", obs: "El túnel de congelación #2 se encuentra en mantenimiento (lleva varias semanas)." },
+                    { texto: "Desviaciones o cuellos de botella en el proceso de masterizado.", estado: "C", obs: "No se registraron novedades durante la verificación." },
+                    { texto: "Infraestructura y B.P.M", estado: "NC", obs: "El evaporador #6 pendiente de instalación, al igual del equipo ubicado en la precámara." }
+                ]
+            }
+        ];
+
+        function renderApp() {
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = '';
+
+            estructuraChecklist.forEach((sec, sIndex) => {
+                let card = document.createElement('div');
+                card.className = 'section-card';
+                
+                let html = `<div class="section-title">${sec.seccion}</div>`;
+
+                sec.items.forEach((item, iIndex) => {
+                    html += `
+                        <div class="item-card">
+                            <div class="item-text">${iIndex + 1}. ${item.texto}</div>
+                            <div class="controls">
+                                <div class="radio-group">
+                                    <label><input type="radio" name="s${sIndex}_i${iIndex}" value="C" ${item.estado === 'C' ? 'checked' : ''} onchange="actualizarEstado(${sIndex}, ${iIndex}, 'C')"> C</label>
+                                    <label><input type="radio" name="s${sIndex}_i${iIndex}" value="NC" ${item.estado === 'NC' ? 'checked' : ''} onchange="actualizarEstado(${sIndex}, ${iIndex}, 'NC')"> NC</label>
+                                    <label><input type="radio" name="s${sIndex}_i${iIndex}" value="AC" ${item.estado === 'AC' ? 'checked' : ''} onchange="actualizarEstado(${sIndex}, ${iIndex}, 'AC')"> AC</label>
+                                </div>
+                            </div>
+                            <textarea placeholder="Escribe tus observaciones aquí..." oninput="actualizarObs(${sIndex}, ${iIndex}, this.value)">${item.obs}</textarea>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+            actualizarResumen();
+        }
+
+        function actualizarEstado(sIndex, iIndex, valor) {
+            estructuraChecklist[sIndex].items[iIndex].estado = valor;
+            actualizarResumen();
+        }
+
+        function actualizarObs(sIndex, iIndex, valor) {
+            estructuraChecklist[sIndex].items[iIndex].obs = valor;
+        }
+
+        function actualizarResumen() {
+            let total = 0;
+            let conformes = 0;
+            let noConformes = 0;
+
+            estructuraChecklist.forEach(sec => {
+                sec.items.forEach(item => {
+                    total++;
+                    if (item.estado === 'C') conformes++;
+                    if (item.estado === 'NC' || item.estado === 'AC') noConformes++;
+                });
+            });
+
+            let porcentaje = Math.round((conformes / total) * 100);
+            document.getElementById('stats-text').innerHTML = `
+                Puntos Evaluados: <b>${total}</b><br>
+                Conformes (C): <b>${conformes} (${porcentaje}%)</b><br>
+                No Conformes / AC: <b>${noConformes} (${100 - porcentaje}%)</b>
+            `;
+        }
+
+        function exportarResumen() {
+            let fecha = document.getElementById('fecha').value;
+            let turno = document.getElementById('turno').value;
+            let auditor = document.getElementById('auditor').value;
+
+            let textoFinal = `*CHECKLIST DE AUDITORÍA DE PROCESOS PC2*\n`;
+            textoFinal += `Fecha: ${fecha} | Turno: ${turno} | Auditor: ${auditor}\n\n`;
+
+            estructuraChecklist.forEach(sec => {
+                textoFinal += `*[ ${sec.seccion} ]*\n`;
+                sec.items.forEach((item, idx) => {
+                    let estadoTxt = item.estado;
+                    textoFinal += `- (${estadoTxt}) ${item.texto}\n`;
+                    if (item.obs.trim() !== "") {
+                        textoFinal += `  Obs: ${item.obs}\n`;
+                    }
+                });
+                textoFinal += `\n`;
+            });
+
+            navigator.clipboard.writeText(textoFinal).then(() => {
+                alert("¡Reporte copiado al portapapeles! Ya puedes pegarlo en WhatsApp, correo o notas.");
+            }).catch(err => {
+                alert("Error al copiar al portapapeles.");
+            });
+        }
+
+        window.onload = renderApp;
+    </script>
+</body>
+</html>
