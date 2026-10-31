@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checklist Auditoría de Procesos PC2</title>
+    <!-- Librería para generar el PDF directamente desde la página HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary-color: #0284c7;
@@ -54,6 +56,7 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border-left: 5px solid var(--primary-color);
+            page-break-inside: avoid;
         }
         .section-title {
             font-size: 1.05rem;
@@ -68,6 +71,7 @@
             border-radius: 8px;
             padding: 10px;
             margin-bottom: 10px;
+            page-break-inside: avoid;
         }
         .item-text {
             font-size: 0.9rem;
@@ -103,6 +107,56 @@
             box-sizing: border-box;
             min-height: 50px;
         }
+        /* Subida y vista previa de evidencias fotográficas */
+        .photo-upload-section {
+            margin-top: 8px;
+        }
+        .file-input {
+            display: none;
+        }
+        .btn-upload {
+            display: inline-block;
+            background-color: #64748b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .photo-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .photo-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .photo-wrapper img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+        }
+        .btn-remove-photo {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
         .summary-box {
             background-color: #0f172a;
             color: white;
@@ -110,9 +164,15 @@
             border-radius: 12px;
             margin-top: 20px;
             font-size: 0.9rem;
+            page-break-inside: avoid;
         }
-        .btn-export {
-            background-color: var(--success-color);
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-action {
             color: white;
             border: none;
             width: 100%;
@@ -121,105 +181,114 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .btn-export:active {
-            transform: scale(0.98);
+        .btn-export { background-color: var(--success-color); }
+        .btn-pdf { background-color: var(--primary-color); }
+        .btn-action:active { transform: scale(0.98); }
+
+        /* Estilo exclusivo para ocultar botones durante el guardado a PDF */
+        .no-print {
+            display: auto;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>CHECKLIST AUDITORÍA PC2</h1>
-        <div class="meta-info">
-            <div>
-                <label>Fecha:</label>
-                <input type="text" id="fecha" value="09/10/2026">
+    <div id="pdf-content">
+        <header>
+            <h1>CHECKLIST AUDITORÍA PC2</h1>
+            <div class="meta-info">
+                <div>
+                    <label>Fecha:</label>
+                    <input type="text" id="fecha" value="09/10/2026">
+                </div>
+                <div>
+                    <label>Turno:</label>
+                    <input type="text" id="turno" value="Día">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Auditor:</label>
+                    <input type="text" id="auditor" value="Joel Molina Farra">
+                </div>
             </div>
-            <div>
-                <label>Turno:</label>
-                <input type="text" id="turno" value="Día">
-            </div>
-            <div style="grid-column: span 2;">
-                <label>Auditor:</label>
-                <input type="text" id="auditor" value="Joel Molina Farra">
-            </div>
+        </header>
+
+        <div id="checklist-container"></div>
+
+        <div class="summary-box">
+            <h3>Resumen General</h3>
+            <p id="stats-text">Calculando...</p>
         </div>
-    </header>
-
-    <div id="checklist-container"></div>
-
-    <div class="summary-box">
-        <h3>Resumen General</h3>
-        <p id="stats-text">Calculando...</p>
     </div>
 
-    <button class="btn-export" onclick="exportarResumen()">Copiar Reporte para Enviar</button>
+    <div class="action-buttons">
+        <button class="btn-action btn-pdf" onclick="descargarPDF()">Descargar como PDF</button>
+        <button class="btn-action btn-export" onclick="exportarResumen()">Copiar Reporte para Enviar</button>
+    </div>
 
     <script>
         const estructuraChecklist = [
             {
                 seccion: "1. RECEPCIÓN",
                 items: [
-                    { texto: "Consumo de hielo y registro control de consumo por área.", estado: "C", obs: "Se verifica los movimientos y el consumo diario del hielo mediante información registrada en el KARDEX del artículo C-00001930 HIELO PROPIO con un saldo de 200 k por consumir a la fecha 09/10/2026. Importante mencionar que durante la jornada la recepción se quedó desabastecida del insumo." },
-                    { texto: "Se encuentra ordenado, íntegro y limpia el área (bines, gavetas, utensilios y materiales).", estado: "C", obs: "El área se encontró limpia, sin embargo hay que mejorar la limpieza de los bines de hielo." },
-                    { texto: "Verificación de la Materia Prima en el área de recepción y cumplimiento de no exceder 48 horas desde el ingreso a planta.", estado: "NC", obs: "Se verifica un lote con fecha de ingreso 06/10 excediendo el tiempo límite para su permanencia en recepción, excediendo las 48 hs en recepción (sin meta)." },
-                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS).", estado: "C", obs: "Verificación la temperatura del producto recibido en el proceso de clasificación (temperatura de 3.1 °C)." }
+                    { texto: "Consumo de hielo y registro control de consumo por área.", estado: "C", obs: "Se verifica los movimientos y el consumo diario del hielo mediante información registrada en el KARDEX del artículo C-00001930 HIELO PROPIO con un saldo de 200 k por consumir a la fecha 09/10/2026. Importante mencionar que durante la jornada la recepción se quedó desabastecida del insumo.", fotos: [] },
+                    { texto: "Se encuentra ordenado, íntegro y limpia el área (bines, gavetas, utensilios y materiales).", estado: "C", obs: "El área se encontró limpia, sin embargo hay que mejorar la limpieza de los bines de hielo.", fotos: [] },
+                    { texto: "Verificación de la Materia Prima en el área de recepción y cumplimiento de no exceder 48 horas desde el ingreso a planta.", estado: "NC", obs: "Se verifica un lote con fecha de ingreso 06/10 excediendo el tiempo límite para su permanencia en recepción, excediendo las 48 hs en recepción (sin meta).", fotos: [] },
+                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS).", estado: "C", obs: "Verificación la temperatura del producto recibido en el proceso de clasificación (temperatura de 3.1 °C).", fotos: [] }
                 ]
             },
             {
                 seccion: "2. DESCABEZADO",
                 items: [
-                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos en el área.", estado: "C", obs: "Sin novedad durante la verificación." },
-                    { texto: "Verificación de limpieza de los equipos y liberación de máquinas por luminometría/visual.", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS - TOLVAS - MESAS).", estado: "C", obs: "Temperaturas dentro de parámetros durante la revisión." },
-                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la revisión no se evidenció paras no programadas en la operación." }
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos en el área.", estado: "C", obs: "Sin novedad durante la verificación.", fotos: [] },
+                    { texto: "Verificación de limpieza de los equipos y liberación de máquinas por luminometría/visual.", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Temperaturas óptimas del producto en el área (BINES - GAVETAS - TOLVAS - MESAS).", estado: "C", obs: "Temperaturas dentro de parámetros durante la revisión.", fotos: [] },
+                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la revisión no se evidenció paras no programadas en la operación.", fotos: [] }
                 ]
             },
             {
                 seccion: "3. MÁQUINAS CLASIFICADORAS",
                 items: [
-                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad en el área durante la visita." },
-                    { texto: "Verificación de limpieza de los equipos y liberación mediante luminometría.", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Verificación de temperaturas en el proceso (tolvas y camarón en parámetro).", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Se evidencia fluidez y correcta distribución del personal operativo (18 personas).", estado: "C", obs: "Distribución: MOD DE 14 EN MAQ DE CLASIF 5 / MOD DE 17 EN MAQ DE CLASIF 6." },
-                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la visita no se evidenció paras no programadas." }
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad en el área durante la visita.", fotos: [] },
+                    { texto: "Verificación de limpieza de los equipos y liberación mediante luminometría.", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Verificación de temperaturas en el proceso (tolvas y camarón en parámetro).", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Se evidencia fluidez y correcta distribución del personal operativo (18 personas).", estado: "C", obs: "Distribución: MOD DE 14 EN MAQ DE CLASIF 5 / MOD DE 17 EN MAQ DE CLASIF 6.", fotos: [] },
+                    { texto: "Existió cuello de botella, paras no programadas en el área o desviaciones.", estado: "C", obs: "Durante la visita no se evidenció paras no programadas.", fotos: [] }
                 ]
             },
             {
                 seccion: "4. VALOR AGREGADO SALA #2, 3, 4",
                 items: [
-                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad durante la visita." },
-                    { texto: "Verificación de temperaturas óptimas del producto.", estado: "C", obs: "No se registraron novedades en producto. Se evidenció la temperatura ambiente no conforme 22.6°C." },
-                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Durante la visita se evidenció acumulación de personal en la sala 4A causado por el avance rápido del personal en talla grande." },
-                    { texto: "Verificación de rendimientos en los procesos.", estado: "C", obs: "Rendimientos dentro de parámetros conforme al corte en la sala #4B." }
+                    { texto: "Cumplimiento de las Buenas Prácticas de manipulación higiénica de alimentos.", estado: "C", obs: "Sin novedad durante la visita.", fotos: [] },
+                    { texto: "Verificación de temperaturas óptimas del producto.", estado: "C", obs: "No se registraron novedades en producto. Se evidenció la temperatura ambiente no conforme 22.6°C.", fotos: [] },
+                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Durante la visita se evidenció acumulación de personal en la sala 4A causado por el avance rápido del personal en talla grande.", fotos: [] },
+                    { texto: "Verificación de rendimientos en los procesos.", estado: "C", obs: "Rendimientos dentro de parámetros conforme al corte en la sala #4B.", fotos: [] }
                 ]
             },
             {
                 seccion: "5. IQF PALINOX 1 - 2 - 3",
                 items: [
-                    { texto: "Temperaturas óptimas de entrada y salida del producto en túneles de congelación.", estado: "NC", obs: "El equipo PALINOX 2 tuvo elevación de temperatura en el transcurso de la mañana." },
-                    { texto: "BPM del área del proceso, integridad de maquinarias y herramientas de trabajo.", estado: "NC", obs: "En el transcurso de la tarde la máquina de sellado ubicada en el IQF2 presentó fallas." },
-                    { texto: "Correcta utilización del detector de metales en el área.", estado: "C", obs: "Uso correcto del detector de metales." },
-                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Se registró una parada no programada de 7 horas en el equipo PALINOX 3 debido a un desprendimiento interno (fisura/rotura de soldadura) en su estructura metálica interna. La atención requirió la intervención de un proveedor externo." }
+                    { texto: "Temperaturas óptimas de entrada y salida del producto en túneles de congelación.", estado: "NC", obs: "El equipo PALINOX 2 tuvo elevación de temperatura en el transcurso de la mañana.", fotos: [] },
+                    { texto: "BPM del área del proceso, integridad de maquinarias y herramientas de trabajo.", estado: "NC", obs: "En el transcurso de la tarde la máquina de sellado ubicada en el IQF2 presentó fallas.", fotos: [] },
+                    { texto: "Correcta utilización del detector de metales en el área.", estado: "C", obs: "Uso correcto del detector de metales.", fotos: [] },
+                    { texto: "Existió cuellos de botella, desviaciones o paras no programadas en el área.", estado: "NC", obs: "Se registró una parada no programada de 7 horas en el equipo PALINOX 3 debido a un desprendimiento interno (fisura/rotura de soldadura) en su estructura metálica interna. La atención requirió la intervención de un proveedor externo.", fotos: [] }
                 ]
             },
             {
                 seccion: "6. CALIDAD",
                 items: [
-                    { texto: "Tiempos acordes al proceso en resultados de los residuales.", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Verificación de equipos de medición calibrados y operativas.", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Se observa el cumplimiento en el registro de concesiones.", estado: "C", obs: "Se verifica el cumplimiento del registro de concesiones con fecha 08/10." }
+                    { texto: "Tiempos acordes al proceso en resultados de los residuales.", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Verificación de equipos de medición calibrados y operativas.", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Se observa el cumplimiento en el registro de concesiones.", estado: "C", obs: "Se verifica el cumplimiento del registro de concesiones con fecha 08/10.", fotos: [] }
                 ]
             },
             {
                 seccion: "7. TÚNELES DE CONGELACIÓN - CÁMARA",
                 items: [
-                    { texto: "Registro y estado de túneles de congelación en buen estado.", estado: "C", obs: "El túnel de congelación #2 se encuentra en mantenimiento (lleva varias semanas)." },
-                    { texto: "Desviaciones o cuellos de botella en el proceso de masterizado.", estado: "C", obs: "No se registraron novedades durante la verificación." },
-                    { texto: "Infraestructura y B.P.M", estado: "NC", obs: "El evaporador #6 pendiente de instalación, al igual del equipo ubicado en la precámara." }
+                    { texto: "Registro y estado de túneles de congelación en buen estado.", estado: "C", obs: "El túnel de congelación #2 se encuentra en mantenimiento (lleva varias semanas).", fotos: [] },
+                    { texto: "Desviaciones o cuellos de botella en el proceso de masterizado.", estado: "C", obs: "No se registraron novedades durante la verificación.", fotos: [] },
+                    { texto: "Infraestructura y B.P.M", estado: "NC", obs: "El evaporador #6 pendiente de instalación, al igual del equipo ubicado en la precámara.", fotos: [] }
                 ]
             }
         ];
@@ -231,7 +300,7 @@
             estructuraChecklist.forEach((sec, sIndex) => {
                 let card = document.createElement('div');
                 card.className = 'section-card';
-                
+
                 let html = `<div class="section-title">${sec.seccion}</div>`;
 
                 sec.items.forEach((item, iIndex) => {
@@ -246,6 +315,12 @@
                                 </div>
                             </div>
                             <textarea placeholder="Escribe tus observaciones aquí..." oninput="actualizarObs(${sIndex}, ${iIndex}, this.value)">${item.obs}</textarea>
+                            
+                            <div class="photo-upload-section">
+                                <label for="file_${sIndex}_${iIndex}" class="btn-upload no-print">📸 Añadir Foto</label>
+                                <input type="file" id="file_${sIndex}_${iIndex}" class="file-input" accept="image/*" multiple onchange="cargarFotos(${sIndex}, ${iIndex}, event)">
+                                <div class="photo-preview-container" id="preview_${sIndex}_${iIndex}"></div>
+                            </div>
                         </div>
                     `;
                 });
@@ -263,6 +338,42 @@
 
         function actualizarObs(sIndex, iIndex, valor) {
             estructuraChecklist[sIndex].items[iIndex].obs = valor;
+        }
+
+        function cargarFotos(sIndex, iIndex, event) {
+            const archivos = event.target.files;
+            if (!archivos) return;
+
+            Array.from(archivos).forEach(archivo => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    estructuraChecklist[sIndex].items[iIndex].fotos.push(e.target.result);
+                    renderFotos(sIndex, iIndex);
+                };
+                reader.readAsDataURL(archivo);
+            });
+
+            event.target.value = '';
+        }
+
+        function renderFotos(sIndex, iIndex) {
+            const container = document.getElementById(`preview_${sIndex}_${iIndex}`);
+            container.innerHTML = '';
+            
+            estructuraChecklist[sIndex].items[iIndex].fotos.forEach((fotoBase64, fIndex) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'photo-wrapper';
+                wrapper.innerHTML = `
+                    <img src="${fotoBase64}" alt="Foto ${fIndex + 1}">
+                    <button class="btn-remove-photo no-print" onclick="eliminarFoto(${sIndex}, ${iIndex}, ${fIndex})">✕</button>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        function eliminarFoto(sIndex, iIndex, fIndex) {
+            estructuraChecklist[sIndex].items[iIndex].fotos.splice(fIndex, 1);
+            renderFotos(sIndex, iIndex);
         }
 
         function actualizarResumen() {
@@ -286,6 +397,27 @@
             `;
         }
 
+        function descargarPDF() {
+            const elemento = document.getElementById('pdf-content');
+            
+            // Ocultar temporalmente los botones de subida/eliminación durante la captura
+            const noPrintElements = document.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
+
+            const opciones = {
+                margin: 8,
+                filename: `Auditoria_PC2_${document.getElementById('fecha').value.replace(/\//g, '-')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opciones).from(elemento).save().then(() => {
+                // Restaurar visibilidad de los botones
+                noPrintElements.forEach(el => el.style.display = '');
+            });
+        }
+
         function exportarResumen() {
             let fecha = document.getElementById('fecha').value;
             let turno = document.getElementById('turno').value;
@@ -300,7 +432,10 @@
                     let estadoTxt = item.estado;
                     textoFinal += `- (${estadoTxt}) ${item.texto}\n`;
                     if (item.obs.trim() !== "") {
-                        textoFinal += `  Obs: ${item.obs}\n`;
+                        textoFinal += `   Obs: ${item.obs}\n`;
+                    }
+                    if (item.fotos.length > 0) {
+                        textoFinal += `   Fotos adjuntas: ${item.fotos.length}\n`;
                     }
                 });
                 textoFinal += `\n`;
